@@ -1,0 +1,7 @@
+{
+    "env":{
+        "MONGO_USER":"ericzhou0815mongodb-1",
+        "MONGO_PASSWORD":"Bn37U1QQHuhYq6Cq",
+        "MONGO_DB":"event-react-book"
+    }
+}
