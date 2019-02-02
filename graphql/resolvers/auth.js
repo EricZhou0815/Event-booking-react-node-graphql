@@ -1,16 +1,57 @@
-const authResolver=require('./auth');
-const eventResolver=require('./events');
-const bookingResolver=require('./booking');
+const bcrypt = require('bcryptjs');
+const jwt=require('jsonwebtoken');
 
-const rootResolver={
-    ...authResolver,
-    ...eventResolver,
-    ...bookingResolver
+const User = require('../../models/user');
+
+const {user}=require('./merge');
+
+module.exports = {
+    //create user
+    createUser: async args => {
+        try {
+            //check if the email exists in the database
+            const existingUser = await User.findOne({email: args.userInput.email});
+            if (existingUser) {
+                throw new Error('User exists already.')
+            }
+            //encrypt input password into hashedPassowrd add return here to make it async
+            const hashedPassword = await bcrypt.hash(args.userInput.password, 12);
+            const user = new User({email: args.userInput.email, password: hashedPassword});
+            const result = await user.save();
+            //return password as null for safety reason.
+            return {
+                ...result._doc,
+                _id: result.id,
+                password: null
+            };
+        } catch (err) {
+            throw err;
+        };
+
+    },
+    //take two input (email, password),first check if email exist, if ture then check if password match,
+    //if true then create and return a token with jsonwebtoken (npm install --save jsonwebtoken)
+    login: async ({email,password})=>{
+        const user=await User.findOne({email:email});
+        console.log(password);
+        if(!user){
+            throw new Error('User does not exist.');
+        }
+        const isPasswordEqual=bcrypt.compare(password,user.passowrd);
+        console.log(isPasswordEqual);
+        if(!isPasswordEqual){
+            throw new Error('Password is incorrect!');
+        }
+        
+        //jwt.sing({data to store},)
+        const token=jwt.sign({userId:user.id,email:user.email},'somesupersecretkey',{expiresIn:'1h'}
+        );
+        return {userId:user.id,token:token,tokenExpiration:1};
+    }
+
 };
 
-module.exports=rootResolver;
-
-/* 
+/*
 //usse promise style
 const events = eventIds => {
     return Event

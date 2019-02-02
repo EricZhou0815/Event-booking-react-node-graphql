@@ -5,13 +5,15 @@ const mongoose = require('mongoose');
 
 const graphQlSchema=require('./graphql/schema/index');
 const graphQlResolvers=require('./graphql/resolvers/index');
-
+const isAuth=require('./middleware/is-auth');
 
 const app = express();
 
 // just for dev, never use for production const events=[]; add middleware to
 // handle json request
 app.use(bodyParser.json());
+
+app.use(isAuth);
 
 //app.get('/',(req,res,next)=>{    res.send('Hello World!'); });
 app.use('/graphql', graphqlHttp({
