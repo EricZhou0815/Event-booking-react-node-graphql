@@ -7,6 +7,7 @@
  * @flow strict
  */
 
+import find from '../polyfills/find';
 import {
   isScalarType,
   isObjectType,
@@ -208,7 +209,7 @@ export function findArgChanges(
 
       for (const oldArgDef of oldTypeFields[fieldName].args) {
         const newArgs = newTypeFields[fieldName].args;
-        const newArgDef = newArgs.find(arg => arg.name === oldArgDef.name);
+        const newArgDef = find(newArgs, arg => arg.name === oldArgDef.name);
 
         // Arg not present
         if (!newArgDef) {
@@ -247,7 +248,7 @@ export function findArgChanges(
       // Check if arg was added to the field
       for (const newArgDef of newTypeFields[fieldName].args) {
         const oldArgs = oldTypeFields[fieldName].args;
-        const oldArgDef = oldArgs.find(arg => arg.name === newArgDef.name);
+        const oldArgDef = find(oldArgs, arg => arg.name === newArgDef.name);
         if (!oldArgDef) {
           const argName = newArgDef.name;
           if (isRequiredArgument(newArgDef)) {

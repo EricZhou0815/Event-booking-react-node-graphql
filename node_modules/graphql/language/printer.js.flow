@@ -3,6 +3,8 @@
  *
  * This source code is licensed under the MIT license found in the
  * LICENSE file in the root directory of this source tree.
+ *
+ * @noflow
  */
 
 import { visit } from './visitor';
@@ -134,9 +136,9 @@ const printDocASTReducer = {
   FieldDefinition: addDescription(
     ({ name, arguments: args, type, directives }) =>
       name +
-      (args.every(arg => arg.indexOf('\n') === -1)
-        ? wrap('(', join(args, ', '), ')')
-        : wrap('(\n', indent(join(args, '\n')), '\n)')) +
+      (hasMultilineItems(args)
+        ? wrap('(\n', indent(join(args, '\n')), '\n)')
+        : wrap('(', join(args, ', '), ')')) +
       ': ' +
       type +
       wrap(' ', join(directives, ' ')),
@@ -182,9 +184,9 @@ const printDocASTReducer = {
     ({ name, arguments: args, locations }) =>
       'directive @' +
       name +
-      (args.every(arg => arg.indexOf('\n') === -1)
-        ? wrap('(', join(args, ', '), ')')
-        : wrap('(\n', indent(join(args, '\n')), '\n)')) +
+      (hasMultilineItems(args)
+        ? wrap('(\n', indent(join(args, '\n')), '\n)')
+        : wrap('(', join(args, ', '), ')')) +
       ' on ' +
       join(locations, ' | '),
   ),
@@ -262,6 +264,14 @@ function indent(maybeString) {
   return maybeString && '  ' + maybeString.replace(/\n/g, '\n  ');
 }
 
+function isMultiline(string) {
+  return string.indexOf('\n') !== -1;
+}
+
+function hasMultilineItems(maybeArray) {
+  return maybeArray && maybeArray.some(isMultiline);
+}
+
 /**
  * Print a block string in the indented block form by adding a leading and
  * trailing blank line. However, if a block string starts with whitespace and is
@@ -269,7 +279,7 @@ function indent(maybeString) {
  */
 function printBlockString(value, isDescription) {
   const escaped = value.replace(/"""/g, '\\"""');
-  return (value[0] === ' ' || value[0] === '\t') && value.indexOf('\n') === -1
-    ? `"""${escaped.replace(/"$/, '"\n')}"""`
-    : `"""\n${isDescription ? escaped : indent(escaped)}\n"""`;
+  return isMultiline(value) || (value[0] !== ' ' && value[0] !== '\t')
+    ? `"""\n${isDescription ? escaped : indent(escaped)}\n"""`
+    : `"""${escaped.replace(/"$/, '"\n')}"""`;
 }

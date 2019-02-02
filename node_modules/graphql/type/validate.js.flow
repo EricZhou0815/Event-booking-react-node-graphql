@@ -7,6 +7,9 @@
  * @flow strict
  */
 
+import find from '../polyfills/find';
+import objectValues from '../polyfills/objectValues';
+import objectEntries from '../polyfills/objectEntries';
 import {
   isObjectType,
   isInterfaceType,
@@ -28,17 +31,13 @@ import type {
 import { isDirective } from './directives';
 import type { GraphQLDirective } from './directives';
 import { isIntrospectionType } from './introspection';
-import { isSchema } from './schema';
+import { assertSchema } from './schema';
 import type { GraphQLSchema } from './schema';
 import inspect from '../jsutils/inspect';
-import find from '../jsutils/find';
-import invariant from '../jsutils/invariant';
-import objectValues from '../jsutils/objectValues';
 import { GraphQLError } from '../error/GraphQLError';
 import type {
   ASTNode,
   FieldDefinitionNode,
-  EnumValueDefinitionNode,
   InputValueDefinitionNode,
   NamedTypeNode,
   TypeNode,
@@ -57,10 +56,7 @@ export function validateSchema(
   schema: GraphQLSchema,
 ): $ReadOnlyArray<GraphQLError> {
   // First check to ensure the provided value is in fact a GraphQLSchema.
-  invariant(
-    isSchema(schema),
-    `Expected ${inspect(schema)} to be a GraphQL schema.`,
-  );
+  assertSchema(schema);
 
   // If this Schema has already been validated, return the previous results.
   if (schema.__validationErrors) {
@@ -284,16 +280,6 @@ function validateFields(
     // Ensure they are named correctly.
     validateName(context, field);
 
-    // Ensure they were defined at most once.
-    const fieldNodes = getAllFieldNodes(type, field.name);
-    if (fieldNodes.length > 1) {
-      context.reportError(
-        `Field ${type.name}.${field.name} can only be defined once.`,
-        fieldNodes,
-      );
-      continue;
-    }
-
     // Ensure the type is an output type
     if (!isOutputType(field.type)) {
       context.reportError(
@@ -369,9 +355,8 @@ function validateObjectImplementsInterface(
   const ifaceFieldMap = iface.getFields();
 
   // Assert each interface field is implemented.
-  for (const fieldName of Object.keys(ifaceFieldMap)) {
+  for (const [fieldName, ifaceField] of objectEntries(ifaceFieldMap)) {
     const objectField = objectFieldMap[fieldName];
-    const ifaceField = ifaceFieldMap[fieldName];
 
     // Assert interface field exists on object.
     if (!objectField) {
@@ -503,15 +488,6 @@ function validateEnumValues(
   for (const enumValue of enumValues) {
     const valueName = enumValue.name;
 
-    // Ensure no duplicates.
-    const allNodes = getEnumValueNodes(enumType, valueName);
-    if (allNodes && allNodes.length > 1) {
-      context.reportError(
-        `Enum type ${enumType.name} can include value ${valueName} only once.`,
-        allNodes,
-      );
-    }
-
     // Ensure valid name.
     validateName(context, enumValue);
     if (valueName === 'true' || valueName === 'false' || valueName === 'null') {
@@ -540,8 +516,6 @@ function validateInputFields(
   for (const field of fields) {
     // Ensure they are named correctly.
     validateName(context, field);
-
-    // TODO: Ensure they are unique per field.
 
     // Ensure the type is an input type
     if (!isInputType(field.type)) {
@@ -606,14 +580,8 @@ function getFieldNode(
   type: GraphQLObjectType | GraphQLInterfaceType,
   fieldName: string,
 ): ?FieldDefinitionNode {
-  return getAllFieldNodes(type, fieldName)[0];
-}
-
-function getAllFieldNodes(
-  type: GraphQLObjectType | GraphQLInterfaceType,
-  fieldName: string,
-): $ReadOnlyArray<FieldDefinitionNode> {
-  return getAllSubNodes(type, typeNode => typeNode.fields).filter(
+  return find(
+    getAllSubNodes(type, typeNode => typeNode.fields),
     fieldNode => fieldNode.name.value === fieldName,
   );
 }
@@ -684,14 +652,5 @@ function getUnionMemberTypeNodes(
 ): ?$ReadOnlyArray<NamedTypeNode> {
   return getAllSubNodes(union, unionNode => unionNode.types).filter(
     typeNode => typeNode.name.value === typeName,
-  );
-}
-
-function getEnumValueNodes(
-  enumType: GraphQLEnumType,
-  valueName: string,
-): ?$ReadOnlyArray<EnumValueDefinitionNode> {
-  return getAllSubNodes(enumType, enumNode => enumNode.values).filter(
-    valueNode => valueNode.name.value === valueName,
   );
 }

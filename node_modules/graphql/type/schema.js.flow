@@ -7,6 +7,8 @@
  * @flow strict
  */
 
+import find from '../polyfills/find';
+import objectValues from '../polyfills/objectValues';
 import {
   isAbstractType,
   isObjectType,
@@ -34,10 +36,8 @@ import type { GraphQLError } from '../error/GraphQLError';
 import inspect from '../jsutils/inspect';
 import { __Schema } from './introspection';
 import defineToStringTag from '../jsutils/defineToStringTag';
-import find from '../jsutils/find';
 import instanceOf from '../jsutils/instanceOf';
 import invariant from '../jsutils/invariant';
-import objectValues from '../jsutils/objectValues';
 import type { ObjMap } from '../jsutils/ObjMap';
 
 /**
@@ -48,6 +48,14 @@ declare function isSchema(schema: mixed): boolean %checks(schema instanceof
 // eslint-disable-next-line no-redeclare
 export function isSchema(schema) {
   return instanceOf(schema, GraphQLSchema);
+}
+
+export function assertSchema(schema: mixed): GraphQLSchema {
+  invariant(
+    isSchema(schema),
+    `Expected ${inspect(schema)} to be a GraphQL schema.`,
+  );
+  return schema;
 }
 
 /**
@@ -85,7 +93,7 @@ export class GraphQLSchema {
   _directives: $ReadOnlyArray<GraphQLDirective>;
   _typeMap: TypeMap;
   _implementations: ObjMap<Array<GraphQLObjectType>>;
-  _possibleTypeMap: ?ObjMap<ObjMap<boolean>>;
+  _possibleTypeMap: ObjMap<ObjMap<boolean>>;
   // Used as a cache for validateSchema().
   __validationErrors: ?$ReadOnlyArray<GraphQLError>;
   // Referenced by validateSchema().
@@ -97,6 +105,8 @@ export class GraphQLSchema {
     if (config && config.assumeValid) {
       this.__validationErrors = [];
     } else {
+      this.__validationErrors = undefined;
+
       // Otherwise check for common mistakes during construction to produce
       // clear and early error messages.
       invariant(
@@ -153,10 +163,11 @@ export class GraphQLSchema {
     // Storing the resulting map for reference by the schema.
     this._typeMap = typeMap;
 
+    this._possibleTypeMap = Object.create(null);
+
     // Keep track of all implementations by interface name.
     this._implementations = Object.create(null);
-    for (const typeName of Object.keys(this._typeMap)) {
-      const type = this._typeMap[typeName];
+    for (const type of objectValues(this._typeMap)) {
       if (isObjectType(type)) {
         for (const iface of type.getInterfaces()) {
           if (isInterfaceType(iface)) {
@@ -207,10 +218,7 @@ export class GraphQLSchema {
     abstractType: GraphQLAbstractType,
     possibleType: GraphQLObjectType,
   ): boolean {
-    let possibleTypeMap = this._possibleTypeMap;
-    if (!possibleTypeMap) {
-      this._possibleTypeMap = possibleTypeMap = Object.create(null);
-    }
+    const possibleTypeMap = this._possibleTypeMap;
 
     if (!possibleTypeMap[abstractType.name]) {
       const possibleTypes = this.getPossibleTypes(abstractType);

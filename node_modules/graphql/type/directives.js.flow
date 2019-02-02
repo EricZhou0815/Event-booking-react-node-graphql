@@ -7,6 +7,7 @@
  * @flow strict
  */
 
+import objectEntries from '../polyfills/objectEntries';
 import type {
   GraphQLFieldConfigArgumentMap,
   GraphQLArgument,
@@ -17,6 +18,7 @@ import defineToStringTag from '../jsutils/defineToStringTag';
 import defineToJSON from '../jsutils/defineToJSON';
 import instanceOf from '../jsutils/instanceOf';
 import invariant from '../jsutils/invariant';
+import inspect from '../jsutils/inspect';
 import type { DirectiveDefinitionNode } from '../language/ast';
 import {
   DirectiveLocation,
@@ -32,6 +34,14 @@ declare function isDirective(
 // eslint-disable-next-line no-redeclare
 export function isDirective(directive) {
   return instanceOf(directive, GraphQLDirective);
+}
+
+export function assertDirective(directive: mixed): GraphQLDirective {
+  invariant(
+    isDirective(directive),
+    `Expected ${inspect(directive)} to be a GraphQL directive.`,
+  );
+  return directive;
 }
 
 /**
@@ -53,28 +63,22 @@ export class GraphQLDirective {
     invariant(config.name, 'Directive must be named.');
     invariant(
       Array.isArray(config.locations),
-      'Must provide locations for directive.',
+      `@${config.name} locations must be an Array.`,
     );
 
-    const args = config.args;
-    if (!args) {
-      this.args = [];
-    } else {
-      invariant(
-        !Array.isArray(args),
-        `@${config.name} args must be an object with argument names as keys.`,
-      );
-      this.args = Object.keys(args).map(argName => {
-        const arg = args[argName];
-        return {
-          name: argName,
-          description: arg.description === undefined ? null : arg.description,
-          type: arg.type,
-          defaultValue: arg.defaultValue,
-          astNode: arg.astNode,
-        };
-      });
-    }
+    const args = config.args || {};
+    invariant(
+      typeof args === 'object' && !Array.isArray(args),
+      `@${config.name} args must be an object with argument names as keys.`,
+    );
+
+    this.args = objectEntries(args).map(([argName, arg]) => ({
+      name: argName,
+      description: arg.description === undefined ? null : arg.description,
+      type: arg.type,
+      defaultValue: arg.defaultValue,
+      astNode: arg.astNode,
+    }));
   }
 
   toString(): string {

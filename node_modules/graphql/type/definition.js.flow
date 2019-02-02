@@ -7,12 +7,14 @@
  * @flow strict
  */
 
+import objectEntries from '../polyfills/objectEntries';
 import defineToJSON from '../jsutils/defineToJSON';
 import defineToStringTag from '../jsutils/defineToStringTag';
 import instanceOf from '../jsutils/instanceOf';
 import inspect from '../jsutils/inspect';
 import invariant from '../jsutils/invariant';
 import keyMap from '../jsutils/keyMap';
+import mapValue from '../jsutils/mapValue';
 import type { ObjMap } from '../jsutils/ObjMap';
 import { Kind } from '../language/kinds';
 import { valueFromASTUntyped } from '../utilities/valueFromASTUntyped';
@@ -505,6 +507,7 @@ export function getNamedType(type) {
 export type Thunk<+T> = (() => T) | T;
 
 function resolveThunk<+T>(thunk: Thunk<T>): T {
+  // $FlowFixMe(>=0.90.0)
   return typeof thunk === 'function' ? thunk() : thunk;
 }
 
@@ -705,9 +708,7 @@ function defineFieldMap<TSource, TContext>(
       'function which returns such an object.',
   );
 
-  const resultFieldMap = Object.create(null);
-  for (const fieldName of Object.keys(fieldMap)) {
-    const fieldConfig = fieldMap[fieldName];
+  return mapValue(fieldMap, (fieldConfig, fieldName) => {
     invariant(
       isPlainObj(fieldConfig),
       `${config.name}.${fieldName} field config must be an object`,
@@ -717,39 +718,34 @@ function defineFieldMap<TSource, TContext>(
       `${config.name}.${fieldName} should provide "deprecationReason" ` +
         'instead of "isDeprecated".',
     );
-    const field = {
+    invariant(
+      fieldConfig.resolve == null || typeof fieldConfig.resolve === 'function',
+      `${config.name}.${fieldName} field resolver must be a function if ` +
+        `provided, but got: ${inspect(fieldConfig.resolve)}.`,
+    );
+
+    const argsConfig = fieldConfig.args || {};
+    invariant(
+      isPlainObj(argsConfig),
+      `${config.name}.${fieldName} args must be an object with argument ` +
+        'names as keys.',
+    );
+
+    const args = objectEntries(argsConfig).map(([argName, arg]) => ({
+      name: argName,
+      description: arg.description === undefined ? null : arg.description,
+      type: arg.type,
+      defaultValue: arg.defaultValue,
+      astNode: arg.astNode,
+    }));
+
+    return {
       ...fieldConfig,
       isDeprecated: Boolean(fieldConfig.deprecationReason),
       name: fieldName,
+      args,
     };
-    invariant(
-      field.resolve == null || typeof field.resolve === 'function',
-      `${config.name}.${fieldName} field resolver must be a function if ` +
-        `provided, but got: ${inspect(field.resolve)}.`,
-    );
-    const argsConfig = fieldConfig.args;
-    if (!argsConfig) {
-      field.args = [];
-    } else {
-      invariant(
-        isPlainObj(argsConfig),
-        `${config.name}.${fieldName} args must be an object with argument ` +
-          'names as keys.',
-      );
-      field.args = Object.keys(argsConfig).map(argName => {
-        const arg = argsConfig[argName];
-        return {
-          name: argName,
-          description: arg.description === undefined ? null : arg.description,
-          type: arg.type,
-          defaultValue: arg.defaultValue,
-          astNode: arg.astNode,
-        };
-      });
-    }
-    resultFieldMap[fieldName] = field;
-  }
-  return resultFieldMap;
+  });
 }
 
 function isPlainObj(obj) {
@@ -1123,8 +1119,7 @@ function defineEnumValues(
     isPlainObj(valueMap),
     `${type.name} values must be an object with value names as keys.`,
   );
-  return Object.keys(valueMap).map(valueName => {
-    const value = valueMap[valueName];
+  return objectEntries(valueMap).map(([valueName, value]) => {
     invariant(
       isPlainObj(value),
       `${type.name}.${valueName} must refer to an object with a "value" key ` +
@@ -1154,9 +1149,7 @@ export type GraphQLEnumTypeConfig /* <T> */ = {|
   extensionASTNodes?: ?$ReadOnlyArray<EnumTypeExtensionNode>,
 |};
 
-export type GraphQLEnumValueConfigMap /* <T> */ = ObjMap<
-  GraphQLEnumValueConfig /* <T> */,
->;
+export type GraphQLEnumValueConfigMap /* <T> */ = ObjMap<GraphQLEnumValueConfig /* <T> */>;
 
 export type GraphQLEnumValueConfig /* <T> */ = {|
   value?: any /* T */,
@@ -1236,20 +1229,15 @@ function defineInputFieldMap(
     `${config.name} fields must be an object with field names as keys or a ` +
       'function which returns such an object.',
   );
-  const resultFieldMap = Object.create(null);
-  for (const fieldName of Object.keys(fieldMap)) {
-    const field = {
-      ...fieldMap[fieldName],
-      name: fieldName,
-    };
+  return mapValue(fieldMap, (fieldConfig, fieldName) => {
     invariant(
-      !field.hasOwnProperty('resolve'),
+      !fieldConfig.hasOwnProperty('resolve'),
       `${config.name}.${fieldName} field has a resolve property, but ` +
         'Input Types cannot define resolvers.',
     );
-    resultFieldMap[fieldName] = field;
-  }
-  return resultFieldMap;
+
+    return { ...fieldConfig, name: fieldName };
+  });
 }
 
 export type GraphQLInputObjectTypeConfig = {|

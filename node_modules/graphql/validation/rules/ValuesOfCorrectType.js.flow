@@ -7,6 +7,7 @@
  * @flow strict
  */
 
+import objectValues from '../../polyfills/objectValues';
 import type { ValidationContext } from '../ValidationContext';
 import { GraphQLError } from '../../error/GraphQLError';
 import type { ValueNode } from '../../language/ast';
@@ -94,16 +95,14 @@ export function ValuesOfCorrectType(context: ValidationContext): ASTVisitor {
         return false; // Don't traverse further.
       }
       // Ensure every required field exists.
-      const inputFields = type.getFields();
       const fieldNodeMap = keyMap(node.fields, field => field.name.value);
-      for (const fieldName of Object.keys(inputFields)) {
-        const fieldDef = inputFields[fieldName];
-        const fieldNode = fieldNodeMap[fieldName];
+      for (const fieldDef of objectValues(type.getFields())) {
+        const fieldNode = fieldNodeMap[fieldDef.name];
         if (!fieldNode && isRequiredInputField(fieldDef)) {
           const typeStr = inspect(fieldDef.type);
           context.reportError(
             new GraphQLError(
-              requiredFieldMessage(type.name, fieldName, typeStr),
+              requiredFieldMessage(type.name, fieldDef.name, typeStr),
               node,
             ),
           );

@@ -22,7 +22,7 @@ import type { Source } from '../language/source';
 declare class GraphQLError extends Error {
   constructor(
     message: string,
-    nodes?: $ReadOnlyArray<ASTNode> | ASTNode | void,
+    nodes?: $ReadOnlyArray<ASTNode> | ASTNode | void | null,
     source?: ?Source,
     positions?: ?$ReadOnlyArray<number>,
     path?: ?$ReadOnlyArray<string | number>,
@@ -104,8 +104,8 @@ export function GraphQLError( // eslint-disable-line no-redeclare
       ? nodes
       : undefined
     : nodes
-      ? [nodes]
-      : undefined;
+    ? [nodes]
+    : undefined;
 
   // Compute locations in the source for the given nodes/positions.
   let _source = source;
