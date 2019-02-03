@@ -30,13 +30,16 @@
     margin: 0 1rem;
 }
 
-.main-navigation__items a{
+.main-navigation__items a,
+.main-navigation__items button{
     text-decoration: none;
     color:black;
 }
 
 .main-navigation__items a:hover,
 .main-navigation__items a:active,
-.main-navigation__items a.active{
+.main-navigation__items a.active,
+.main-navigation__items button:hover,
+.main-navigation__items button:active{
     color: white;
 }

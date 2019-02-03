@@ -17,31 +17,35 @@ const mainNavigation = props => (
                             <ul>
                                 {
                                     !context.token && (
-                                        <li>
-                                            <NavLink to="/auth">Authentication</NavLink>
-                                        </li>
+                                        <React.Fragment>
+                                            <li>
+                                                <NavLink to="/auth">Authentication</NavLink>
+                                            </li>
+                                            <li>
+                                                <NavLink to="/events">Event</NavLink>
+                                            </li>
+                                        </React.Fragment>
                                     )
                                 }
-
-                                <li>
-                                    <NavLink to="/events">Event</NavLink>
-                                </li>
                                 {
                                     context.token && (
+                                        <React.Fragment>
                                         <li>
                                             <NavLink to="/bookings">Booking</NavLink>
                                         </li>
+                                        <li>
+                                                <NavLink to="/events">Event</NavLink>
+                                            </li>
+                                        <li><button onClick={context.logout}>Logout</button></li>
+                                        </React.Fragment>
                                     )
                                 }
-
                             </ul>
                         </nav>
-
                     </header>
                 )
             }
         }
-
     </AuthContext.Consumer>
 );
 
