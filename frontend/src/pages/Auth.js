@@ -12,8 +12,8 @@ class AuthPage extends Component {
 
     constructor(props) {
         super(props);
-        this.emailEl = React.createRef();
-        this.passwordEl = React.createRef();
+        this.emailElRef = React.createRef();
+        this.passwordElRef = React.createRef();
     }
 
     switchModelHandler = () => {
@@ -26,8 +26,8 @@ class AuthPage extends Component {
 
     submitHandler = event => {
         event.preventDefault();
-        const email = this.emailEl.current.value;
-        const password = this.passwordEl.current.value;
+        const email = this.emailElRef.current.value;
+        const password = this.passwordElRef.current.value;
 
         if (email.trim().length === 0 || password.trim().length === 0) {
             return;
@@ -94,11 +94,11 @@ class AuthPage extends Component {
             <form className="auth-form" onSubmit={this.submitHandler}>
                 <div className="form-control">
                     <label htmlFor="email">Email</label>
-                    <input type="email" id="email" ref={this.emailEl}/>
+                    <input type="email" id="email" ref={this.emailElRef}/>
                 </div>
                 <div className="form-control">
                     <label htmlFor="password">Password</label>
-                    <input type="password" id="password" ref={this.passwordEl}/>
+                    <input type="password" id="password" ref={this.passwordElRef}/>
                 </div>
                 <div className="form-actions">
                     <button type="submit">Submit</button>
