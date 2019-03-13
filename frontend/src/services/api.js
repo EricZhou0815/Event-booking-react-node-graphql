@@ -2,6 +2,7 @@ import axios from 'axios';
 
 const host='http://localhost:8000';
 
+//set header with token
 export const setToken=token=>{
     if (token) {
         axios.defaults.common['Authorization']=`Bearer ${token}`;

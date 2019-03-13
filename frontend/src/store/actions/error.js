@@ -1,7 +1,7 @@
 import {REMOVE_ERROR,ADD_ERROR} from '../actionTypes';
 
 
-export const addErr=error=>({
+export const addError=error=>({
     type:ADD_ERROR,
     error
 });
