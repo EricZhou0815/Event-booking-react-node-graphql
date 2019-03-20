@@ -1,7 +1,16 @@
+const DataLoader=require('dataloader');
 const Event=require('../../models/event');
 const User=require('../../models/user');
 const {dateToString} = require('../../helpers/date');
 
+
+const eventLoader=new DataLoader(eventIds=>{
+    return events(eventIds);
+});
+
+const userLoader=new DataLoader(userIds=>{
+    return User.find({_id:{$in:userIds}});
+});
 
 //use async style
 const events = async eventIds => {
@@ -21,8 +30,11 @@ const events = async eventIds => {
 
 const singleEvent = async eventId => {
     try {
-        const event = await Event.findById(eventId);
-        return transformEvent(event);
+        //use dataloader as cache to store data of previous request to reduce request to ther server
+        const event=await eventLoader.load(eventId.toString());
+        return event;
+        //const event = await Event.findById(eventId);
+        //return transformEvent(event);
     } catch (err) {
         console.log(err);
         throw err;
@@ -32,11 +44,12 @@ const singleEvent = async eventId => {
 //sue async style
 const user = async userId => {
     try {
-        const user = await User.findById(userId);
+        const user = await userLoader.load(userId.toString());
         return {
             ...user._doc,
             _id: user.id, //user.id is processed by mongoose to stringfy id object
-            createdEvents: events.bind(this, user._doc.reatedEvents)
+            createdEvents:()=>eventLoader.loadMany(user._doc.createdEvents)
+            //createdEvents: events.bind(this, user._doc.createdEvents)
         };
     } catch (err) {
         throw err;
