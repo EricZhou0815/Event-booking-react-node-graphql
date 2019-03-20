@@ -28,7 +28,7 @@ class AuthPage extends Component {
         event.preventDefault();
         const email = this.emailElRef.current.value;
         const password = this.passwordElRef.current.value;
-
+        //validation for email and password
         if (email.trim().length === 0 || password.trim().length === 0) {
             return;
         }

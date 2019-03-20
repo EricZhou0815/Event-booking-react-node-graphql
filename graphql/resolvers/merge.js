@@ -47,7 +47,7 @@ const user = async userId => {
 // need to convert to string for display mongoDB stores id as ID object, we need
 // to convert it to string
 const transformEvent = event => {
-    return {
+    return { 
         ...event._doc,
         _id: event.id,
         date: dateToString(event._doc.date),

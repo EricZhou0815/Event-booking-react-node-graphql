@@ -3,8 +3,15 @@
     background: white;
     box-shadow:0 2px 8px rgba(0,0,0,0.3);
     position:fixed;
-    left:0;
+    left:0px;
     top:20vh;
+}
+
+@media(min-width:768px){
+    .modal{
+        width:30rem;
+        left:calc((100%-30rem) / 2)
+    }
 }
 
 .modal__header{
@@ -19,8 +26,8 @@
 
 }
 
-.modald__content {
-    padding:1rem;
+.modal__content{
+   padding:15px;
 }
 
 .modal__actions{
