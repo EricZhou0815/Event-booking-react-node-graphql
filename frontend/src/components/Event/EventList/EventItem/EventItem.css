@@ -1,0 +1,20 @@
+.events__list-item{
+    margin:1rem 0;
+    padding:1rem;
+    border: 1px solid #03a892;
+    display:flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.events__list-item h1{
+    margin:0;
+    font-size:1.2rem;
+    color:#03a892;
+}
+
+.events__list-item h3 {
+    margin-top:10px;
+    font-size: 1rem;
+    color:rgb(118, 118, 118);
+}
